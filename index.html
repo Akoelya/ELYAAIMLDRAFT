@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="description" content="ElyaDraftSimulator — MPL Pro Meta & Live MLBB Patch Draft Simulator with 133 Official Heroes, 4 Battlefield Maps, and MPL PH S18 Trained Pro AI." />
+  <meta property="og:title" content="ElyaDraftSimulator — MPL Pro & Live MLBB Draft Simulator" />
+  <meta property="og:description" content="Interactive 5v5 MLBB Draft Simulator, Live Draft Counter Coach, MPL Tier List, and Matchup Matrix for teammates and scrims." />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#080c16" />
+  <title>ElyaDraftSimulator — MPL Pro Meta & Live MLBB Patch Draft Simulator</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1326' stroke='%2300e5ff' stroke-width='4'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='38' fill='%2300e5ff'%3EE%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=5.3" />
+</head>
+<body>
+  <!-- Top Broadcast Navigation Header -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-brand">
+        <div class="brand-emblem">
+          <span class="emblem-core">E</span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1>ELYA<span>DRAFT</span>SIMULATOR</h1>
+            <span class="badge-mpl">MPL PRO × LIVE PATCH</span>
+          </div>
+          <p class="brand-subtitle" id="patchStatusText">
+            Loading 133 Official MLBB Heroes &amp; Mythical Glory+ Matchup Matrix...
+          </p>
+        </div>
+      </div>
+
+      <!-- Main View Switcher Tabs -->
+      <nav class="main-nav" role="tablist">
+        <button class="nav-tab active" data-view="simulator" id="tabSimulator">
+          <span class="tab-icon">🎮</span>
+          <span>Draft Simulator</span>
+        </button>
+        <button class="nav-tab" data-view="live-counter" id="tabLiveCounter">
+          <span class="tab-icon">⚡</span>
+          <span>Live Draft Counter</span>
+        </button>
+        <button class="nav-tab" data-view="tier-list" id="tabTierList">
+          <span class="tab-icon">🏆</span>
+          <span>MPL &amp; Patch Tier List</span>
+        </button>
+        <button class="nav-tab" data-view="matrix" id="tabMatrix">
+          <span class="tab-icon">⚔️</span>
+          <span>Counter Matrix</span>
+        </button>
+      </nav>
+
+      <!-- Live Patch Controls & Auto-Sync -->
+      <div class="topbar-controls">
+        <div class="control-group" title="Select how Elya weights MPL Tournament Meta vs Live Ranked Patch Data">
+          <label for="metaWeightMode">Meta Engine</label>
+          <select id="metaWeightMode" class="cyber-select">
+            <option value="hybrid" selected>Hybrid (MPL + Patch)</option>
+            <option value="mpl">MPL Tournament Focus</option>
+            <option value="ranked">Live Ranked (MG+)</option>
+          </select>
+        </div>
+
+        <div class="control-group" title="Select Official Moonton GMS Live Patch Timeframe">
+          <label for="timeframeSelect">Patch Window</label>
+          <select id="timeframeSelect" class="cyber-select">
+            <option value="1d">24h Live Hotfix</option>
+            <option value="7d" selected>7-Day Current Patch</option>
+            <option value="15d">15-Day Bi-Weekly</option>
+            <option value="30d">30-Day Season</option>
+          </select>
+        </div>
+
+        <button class="btn-sync" id="btnAutoSync" title="Fetch latest official MLBB hero stats, win rates, ban rates, and counters directly from Moonton GMS API">
+          <span class="sync-dot" id="syncDot"></span>
+          <span id="syncBtnText">⚡ Auto-Sync Patch</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       VIEW 1 & 2: DRAFT SIMULATOR & LIVE DRAFT COUNTER WORKSPACE
+       ===================================================================== -->
+  <main id="viewDraftWorkspace" class="view-section active">
+    <div class="workspace-container">
+      <!-- Unified Control Card Bar -->
+      <section class="draft-toolbar-card">
+        <div class="toolbar-left" id="simModeControls">
+          <div class="toolbar-box">
+            <span class="toolbar-label">SIDE</span>
+            <div class="segmented-control" id="playerSideGroup">
+              <button class="seg-btn active" data-side="blue">🔵 Blue (1st)</button>
+              <button class="seg-btn" data-side="red">🔴 Red (Counter)</button>
+              <button class="seg-btn" data-side="both">👥 Both</button>
+              <button class="seg-btn" data-side="ai_vs_ai">🤖 AI vs AI</button>
+            </div>
+          </div>
+
+          <div class="toolbar-box map-toolbar-box">
+            <span class="toolbar-label">MAP</span>
+            <select id="battlefieldMapSelect" class="cyber-select-inline" title="Select Current MLBB Patch Battlefield Map">
+              <option value="healing_turtle">🐢 Healing Turtle</option>
+              <option value="golden_turret">🏰 Golden Turret</option>
+              <option value="revealing_wisps">🔮 Revealing Wisps / Flares</option>
+              <option value="flying_cloud">☁️ Flying Cloud</option>
+            </select>
+            <button class="btn-map-modal-trigger" id="btnOpenMapModal" title="Open 4-Map Tactical Selector & Preview">🗺️ Maps</button>
+          </div>
+
+          <div class="toolbar-box">
+            <span class="toolbar-label">FORMAT</span>
+            <select id="draftFormatSelect" class="cyber-select-inline">
+              <option value="mpl10" selected>MPL 10-Ban (3+2)</option>
+              <option value="ranked6">Classic 6-Ban</option>
+            </select>
+          </div>
+
+          <div class="toolbar-box">
+            <span class="toolbar-label">AI LEVEL</span>
+            <select id="aiDifficultySelect" class="cyber-select-inline" title="Select Opponent AI & Coach Calculation Depth">
+              <option value="mpl_ph" selected>🏆 MPL PH S18 Trained Pro AI</option>
+              <option value="god">💀 Omega God Mode (MPL PH S18 + 3-Ply Minimax)</option>
+              <option value="pro">🔥 MPL Grand Finals AI</option>
+              <option value="aggressive">⚔️ Aggressive Tempo Dive</option>
+              <option value="teamfight">🛡️ 5v5 Teamfight Front-to-Back</option>
+            </select>
+          </div>
+
+          <div class="toolbar-box">
+            <span class="toolbar-label">TIMER</span>
+            <select id="timerModeSelect" class="cyber-select-inline">
+              <option value="0" selected>∞ No Limit</option>
+              <option value="30">⏱️ 30s MPL</option>
+              <option value="20">⏱️ 20s Scrim</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Shown when in Live Draft Counter mode -->
+        <div class="toolbar-left hidden" id="liveCounterBanner">
+          <div class="live-mode-callout">
+            <span class="pulse-badge">LIVE COACH</span>
+            <span>Click <strong>any Blue/Red Pick or Ban box</strong> below to target that slot, then click any hero to lock it in.</span>
+          </div>
+        </div>
+
+        <div class="toolbar-actions">
+          <button class="btn-action" id="btnUndo" title="Undo last pick or ban">↩ Undo</button>
+          <button class="btn-action" id="btnAiStep" title="Let Elya Pro AI execute the current turn">🤖 AI Pick</button>
+          <button class="btn-action" id="btnAutoFinish" title="Simulate the rest of the draft automatically">⏩ Auto-Complete</button>
+          <button class="btn-action btn-primary-outline" id="btnOpenReport" title="View full Team Composition & Matchup Grade Report">📊 Analysis</button>
+          <button class="btn-action btn-danger-outline" id="btnResetDraft" title="Reset current draft">🔄 Reset</button>
+        </div>
+      </section>
+
+      <!-- Tournament Sequence Progress & Win Probability HUD Box -->
+      <section class="broadcast-hud-card">
+        <!-- Active MLBB Battlefield Map Strip -->
+        <div class="active-map-banner map-theme-healing_turtle" id="activeMapBanner">
+          <div class="map-banner-left">
+            <span class="map-banner-badge" id="activeMapBadge">🐢 HEALING TURTLE</span>
+            <span class="map-banner-slogan" id="activeMapSlogan">"Turtle Pushes Lanes &amp; Heals Nearby Allied Heroes"</span>
+            <span class="map-banner-divider">•</span>
+            <span class="map-banner-comp" id="activeMapCompText">MPL Comp: <strong>Early Turtle Contest + Sustain Brawl Deathball</strong></span>
+          </div>
+          <div class="map-banner-actions">
+            <button class="btn-map-quick" id="btnRandomizeMapHud" title="Randomize 1 of the 4 Official MLBB Battlefield Maps (Ranked/MPL Style)">🎲 Random Map</button>
+            <button class="btn-map-quick btn-map-highlight" id="btnChangeMapHud" title="Choose from the 4 MLBB Battlefield Maps">🗺️ Change Map (4)</button>
+          </div>
+        </div>
+
+        <div class="hud-top-row">
+          <div class="team-header blue-header">
+            <div class="team-tag-group">
+              <span class="team-side-dot blue-dot"></span>
+              <span class="team-tag">BLUE SIDE</span>
+              <span class="team-role-sub" id="blueRoleTag">YOU • 1ST PICK</span>
+            </div>
+            <div class="team-winprob" id="blueWinProbText">50.0%</div>
+          </div>
+
+          <div class="phase-center-box" id="phaseCenterBox">
+            <div class="phase-stage-label" id="phaseStageLabel">BAN PHASE 1 • TURN 1 / 20</div>
+            <div class="phase-action-title" id="phaseActionTitle">🔵 BLUE SIDE BANNING (1/3)</div>
+            <div class="turn-timer-pill hidden" id="turnTimerPill">30s</div>
+          </div>
+
+          <div class="team-header red-header">
+            <div class="team-winprob" id="redWinProbText">50.0%</div>
+            <div class="team-tag-group right-align">
+              <span class="team-role-sub" id="redRoleTag">MPL PRO AI</span>
+              <span class="team-tag">RED SIDE</span>
+              <span class="team-side-dot red-dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tug-of-War Win Probability Bar -->
+        <div class="winprob-bar-container" title="Real-time Win Probability calculated from Live Patch Win Rates, Direct Counter Matchup Deltas, Ally Synergy Deltas, and MPL Role Balance">
+          <div class="winprob-fill-blue" id="winProbFillBlue" style="width: 50%;"></div>
+          <div class="winprob-fill-red" id="winProbFillRed" style="width: 50%;"></div>
+          <div class="winprob-center-marker"></div>
+        </div>
+
+        <!-- Grouped Phase Sequence Boxes -->
+        <div class="sequence-phases-grid" id="sequenceRibbon"></div>
+      </section>
+
+      <!-- 3-Column Symmetrical Draft Arena -->
+      <section class="draft-arena">
+        <!-- LEFT COLUMN: BLUE SIDE -->
+        <aside class="team-column blue-column">
+          <div class="column-section-box bans-section-box">
+            <div class="box-section-header">
+              <span class="box-title-blue">🔵 BLUE BANS</span>
+              <span class="box-subtitle">Phase 1 (3) • Phase 2 (2)</span>
+            </div>
+            <div class="bans-row" id="blueBansRow"></div>
+          </div>
+
+          <div class="column-section-box picks-section-box">
+            <div class="box-section-header">
+              <span class="box-title-blue">🔵 BLUE LINEUP (5)</span>
+              <span class="box-subtitle">Click Lane to Swap</span>
+            </div>
+            <div class="picks-list" id="bluePicksList"></div>
+          </div>
+
+          <!-- Blue Team Composition Radar & Diagnostics -->
+          <div class="column-section-box comp-diagnostics" id="blueCompDiagnostics"></div>
+        </aside>
+
+        <!-- CENTER COLUMN: ELYA PRO AI COACH + HERO SELECTION POOL -->
+        <div class="center-workstation">
+          <!-- Elya AI Pro Coach Recommendation Box -->
+          <div class="coach-panel-box">
+            <div class="coach-header">
+              <div class="coach-title-wrap">
+                <span class="coach-badge">ELYA PRO COACH</span>
+                <h2 id="coachHeaderTitle">Top 6 Priority Recommendations</h2>
+              </div>
+              <div class="coach-lane-filter">
+                <span class="filter-label">Target Lane:</span>
+                <div class="mini-lane-pills" id="coachLanePills">
+                  <button class="lane-pill active" data-lane="auto">✨ Auto Missing</button>
+                  <button class="lane-pill" data-lane="EXP Lane">⚔️ EXP</button>
+                  <button class="lane-pill" data-lane="Jungle">🗡️ Jungle</button>
+                  <button class="lane-pill" data-lane="Mid Lane">🔮 Mid</button>
+                  <button class="lane-pill" data-lane="Gold Lane">🏹 Gold</button>
+                  <button class="lane-pill" data-lane="Roam">🛡️ Roam</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ai-mindread-bar" id="aiMindReadBar">
+              <span class="mindread-badge" id="aiMindReadBadge">💀 OMEGA 3-PLY MINIMAX</span>
+              <span class="mindread-text" id="aiMindReadText">Adversarial Lookahead Active: Evaluating 1v1 Lane Counters, Joint Double-Turn Combos &amp; Role-Pool Pinch Bans</span>
+            </div>
+
+            <div class="coach-cards-grid" id="coachCardsGrid"></div>
+          </div>
+
+          <!-- Hero Pool Filter Bar & Grid Box -->
+          <div class="hero-pool-box">
+            <div class="pool-filters-container">
+              <!-- Row 1: Search + Dropdown Filters -->
+              <div class="pool-filter-row-top">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="heroSearchInput" placeholder="Search 133 heroes, roles, lanes, or archetypes (e.g. Hirara, Anti-Dash, Lukas)..." autocomplete="off" />
+                  <button class="clear-search hidden" id="btnClearSearch">✕</button>
+                </div>
+
+                <div class="pool-right-filters">
+                  <select id="poolRoleSelect" class="cyber-select-sm">
+                    <option value="all">Class: All</option>
+                    <option value="Tank">Tank</option>
+                    <option value="Fighter">Fighter</option>
+                    <option value="Assassin">Assassin</option>
+                    <option value="Mage">Mage</option>
+                    <option value="Marksman">Marksman</option>
+                    <option value="Support">Support</option>
+                  </select>
+
+                  <select id="poolTierSelect" class="cyber-select-sm">
+                    <option value="all">Tier: All</option>
+                    <option value="map_fit">🗺️ Best for Active Map</option>
+                    <option value="S+">S+ God Tier</option>
+                    <option value="S">S+ &amp; S Tier</option>
+                    <option value="hot">🔥 Patch Buffed / New</option>
+                  </select>
+
+                  <select id="poolSortSelect" class="cyber-select-sm">
+                    <option value="coach" selected>Sort: Elya Turn Score</option>
+                    <option value="map_fit">Sort: Best Map Fit</option>
+                    <option value="hybrid">Sort: MPL + Patch Score</option>
+                    <option value="counter">Sort: Counter vs Enemy</option>
+                    <option value="ban_rate">Sort: Ban Rate %</option>
+                    <option value="win_rate">Sort: Win Rate %</option>
+                    <option value="pick_rate">Sort: Pick Rate %</option>
+                    <option value="name">Sort: Name (A–Z)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Row 2: Lane Filter Tabs + Count Badge -->
+              <div class="pool-filter-row-bottom">
+                <div class="filter-tabs" id="poolLaneTabs">
+                  <button class="filter-tab active" data-lane="all">All Lanes</button>
+                  <button class="filter-tab" data-lane="EXP Lane">⚔️ EXP Lane</button>
+                  <button class="filter-tab" data-lane="Jungle">🗡️ Jungle</button>
+                  <button class="filter-tab" data-lane="Mid Lane">🔮 Mid Lane</button>
+                  <button class="filter-tab" data-lane="Gold Lane">🏹 Gold Lane</button>
+                  <button class="filter-tab" data-lane="Roam">🛡️ Roam</button>
+                </div>
+                <span class="pool-count-badge" id="poolCountBadge">133 Heroes</span>
+              </div>
+            </div>
+
+            <!-- Hero Grid -->
+            <div class="hero-grid" id="heroPoolGrid"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: RED SIDE -->
+        <aside class="team-column red-column">
+          <div class="column-section-box bans-section-box">
+            <div class="box-section-header">
+              <span class="box-subtitle">Phase 1 (3) • Phase 2 (2)</span>
+              <span class="box-title-red">RED BANS 🔴</span>
+            </div>
+            <div class="bans-row" id="redBansRow"></div>
+          </div>
+
+          <div class="column-section-box picks-section-box">
+            <div class="box-section-header">
+              <span class="box-subtitle">Click Lane to Swap</span>
+              <span class="box-title-red">RED LINEUP (5) 🔴</span>
+            </div>
+            <div class="picks-list" id="redPicksList"></div>
+          </div>
+
+          <!-- Red Team Composition Radar & Diagnostics -->
+          <div class="column-section-box comp-diagnostics" id="redCompDiagnostics"></div>
+        </aside>
+      </section>
+    </div>
+  </main>
+
+  <!-- =====================================================================
+       VIEW 3: MPL & LIVE PATCH TIER LIST
+       ===================================================================== -->
+  <section id="viewTierList" class="view-section">
+    <div class="page-container">
+      <div class="section-banner-card">
+        <div>
+          <span class="eyebrow-tag">AUTO-UPDATED FROM MOONTON GMS API + MPL PRO META</span>
+          <h2>MPL Pro &amp; Mythical Glory+ Live Patch Tier List</h2>
+          <p>Real-time hero rankings combining MPL Tournament presence, flex-pick priority, and live Mythical Glory+ win/ban/pick statistics.</p>
+        </div>
+        <div class="tier-controls-bar">
+          <div class="filter-tabs" id="tierLaneTabs">
+            <button class="filter-tab active" data-lane="all">All Lanes</button>
+            <button class="filter-tab" data-lane="EXP Lane">⚔️ EXP Lane</button>
+            <button class="filter-tab" data-lane="Jungle">🗡️ Jungle</button>
+            <button class="filter-tab" data-lane="Mid Lane">🔮 Mid Lane</button>
+            <button class="filter-tab" data-lane="Gold Lane">🏹 Gold Lane</button>
+            <button class="filter-tab" data-lane="Roam">🛡️ Roam</button>
+          </div>
+          <input type="text" id="tierSearchInput" class="cyber-input" placeholder="Search hero..." />
+        </div>
+      </div>
+
+      <!-- Patch Movers Highlight Cards (Newest / Revamped / Buffed Risers) -->
+      <div class="patch-spotlight-strip" id="patchSpotlightStrip"></div>
+
+      <!-- Tier Rows (S+, S, A, B, C) -->
+      <div class="tier-board" id="tierBoardContainer"></div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       VIEW 4: HERO COUNTER & SYNERGY MATRIX EXPLORER
+       ===================================================================== -->
+  <section id="viewMatrix" class="view-section">
+    <div class="page-container matrix-layout">
+      <!-- Left Sidebar: Hero Selector List -->
+      <aside class="matrix-sidebar">
+        <div class="matrix-sidebar-header">
+          <h3>Select Hero (133)</h3>
+          <input type="text" id="matrixHeroSearch" class="cyber-input" placeholder="Search hero name or lane..." />
+          <div class="mini-lane-pills" id="matrixLaneFilter">
+            <button class="lane-pill active" data-lane="all">All</button>
+            <button class="lane-pill" data-lane="EXP Lane">EXP</button>
+            <button class="lane-pill" data-lane="Jungle">JGL</button>
+            <button class="lane-pill" data-lane="Mid Lane">MID</button>
+            <button class="lane-pill" data-lane="Gold Lane">GOLD</button>
+            <button class="lane-pill" data-lane="Roam">ROAM</button>
+          </div>
+        </div>
+        <div class="matrix-hero-list" id="matrixHeroList"></div>
+      </aside>
+
+      <!-- Right Detail Content: Full Matchup, Scaling, and Lore Relations -->
+      <div class="matrix-detail-pane" id="matrixDetailPane"></div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       PRE-DRAFT 4-MAP BATTLEFIELD SELECTION MODAL
+       ===================================================================== -->
+  <div class="modal-backdrop" id="mapSelectModal">
+    <div class="modal-card map-modal-card">
+      <div class="modal-header map-modal-header">
+        <div>
+          <span class="eyebrow-tag">STEP 1 BEFORE DRAFT • LATEST MLBB PATCH 4 BATTLEFIELD MAPS</span>
+          <h2>Select Battlefield Map — AI &amp; Coach Adapt to Map Effect</h2>
+          <p class="map-modal-subtitle">
+            Select 1 of the 4 current MLBB battlefield map changes (<strong>Healing Turtle</strong>, <strong>Golden Turret</strong>, <strong>Revealing Wisps / Detection Flares</strong>, or <strong>Flying Cloud</strong>) so Elya Pro Coach and God Mode AI optimize bans, counter-picks, and 5v5 team compositions for the map!
+          </p>
+        </div>
+        <button class="btn-close-modal" id="btnCloseMapModal" title="Confirm Selected Map &amp; Enter Draft">✕</button>
+      </div>
+      <div class="modal-body map-modal-body">
+        <div class="map-cards-grid" id="mapModalCardsGrid"></div>
+      </div>
+      <div class="modal-footer map-modal-footer">
+        <div class="map-footer-hint" id="mapModalSelectedSummary">
+          Selected: <strong>🐢 Healing Turtle</strong> — Click any map card or press Confirm to begin drafting.
+        </div>
+        <div class="map-footer-buttons">
+          <button class="btn-action btn-primary-outline" id="btnRandomizeMapModal">🎲 Randomize Map (MPL/Ranked Style)</button>
+          <button class="btn-sync" id="btnConfirmMapStart">⚡ Confirm Map &amp; Start Draft</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       POST-DRAFT & LIVE ANALYSIS MODAL
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="draftReportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">ELYA PRO COACH EVALUATION</span>
+          <h2>Complete 5v5 Draft Grade &amp; Matchup Simulation</h2>
+        </div>
+        <button class="btn-close-modal" id="btnCloseReport">✕</button>
+      </div>
+      <div class="modal-body" id="draftReportContent"></div>
+      <div class="modal-footer">
+        <button class="btn-action" id="btnModalContinue">Keep Editing Draft</button>
+        <button class="btn-action btn-primary-outline" id="btnModalSwapSides">🔄 Swap Blue/Red &amp; New Draft</button>
+        <button class="btn-sync" id="btnModalNewDraft">🎮 Start New Draft</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Pre-synced Live MLBB + MPL Dataset & Trained MPL PH S18 Model -->
+  <script src="data/mlbb_meta.js?v=5.2"></script>
+  <script src="data/mpl_ph_model.js?v=5.2"></script>
+  <script src="js/app.js?v=5.2"></script>
+</body>
+</html>
